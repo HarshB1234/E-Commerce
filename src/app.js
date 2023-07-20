@@ -14,6 +14,7 @@ const Category = require("./models/category");
 const SubCategory = require("./models/subCategory");
 const Product = require("./models/product");
 const Attribute = require("./models/attribute");
+const Address = require("./models/address");
 
 // Package
 const cors = require("cors");
@@ -28,6 +29,7 @@ const login_router = require("./routes/login");
 const category_router = require("./routes/category");
 const product_router = require("./routes/product");
 const attribute_router = require("./routes/attribute");
+const address_router = require("./routes/address");
 
 // Express App
 const app = express();
@@ -47,6 +49,7 @@ app.use("/login", login_router);
 app.use("/category", category_router);
 app.use("/product", product_router);
 app.use("/attribute", attribute_router);
+app.use("/address", address_router);
 
 // Listening
 app.listen(port, () => {

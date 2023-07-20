@@ -1,7 +1,7 @@
 const { uuid } = require('uuidv4');
 const Attribute = require("../models/attribute");
 
-// Add
+// Add Attribute
 
 const addAttribute = async (req, res) => {
     try {
@@ -25,7 +25,7 @@ const addAttribute = async (req, res) => {
     }
 };
 
-// Get
+// Get Attribute List
 
 const getAttributesGroupList = async (req, res) => {
     try {
@@ -33,7 +33,16 @@ const getAttributesGroupList = async (req, res) => {
             attributes: ["G_Name"],
             group: ["G_Name"]
         }).then((list) => {
-            res.status(200).json(list);
+            var listToSend = [];
+
+            for (let i in list){
+                let value = Object.values(list[i].dataValues);
+                console.log(value);
+                let v = value[0];
+
+                listToSend.push(v);
+            }
+            res.status(200).json(listToSend);
         }).catch((err) => {
             res.send(err);
         });
@@ -57,4 +66,49 @@ const getAttributesList = async (req, res) => {
     }
 };
 
-module.exports = { addAttribute, getAttributesGroupList, getAttributesList }
+const getAttributesListForProduct = async (req, res) => {
+    try {
+        await Attribute.findAll({
+            attributes: ["Name", "G_Name"],
+            order: [["G_Name"]]
+        }).then((list) => {
+            var listToSend = {};
+
+            for (let i in list){
+                let value = Object.values(list[i].dataValues);
+                let k = value[0];
+                let v = value[1];
+
+                listToSend[k] = v;
+            }
+
+            res.status(200).json(listToSend);
+        }).catch((err) => {
+            res.send(err);
+        });
+    } catch (err) {
+        res.send(err);
+    }
+};
+
+// Delete Attribute
+
+const deleteAttribute = async (req, res) => {
+    try {
+        const Id = req.params.id;
+
+        await Attribute.destroy({
+            where: {
+                Id
+            }
+        }).then(() => {
+            res.status(200).json({ "msg": "Deleted successfully." });
+        }).catch((err) => {
+            res.send(err);
+        });
+    } catch (err) {
+        res.send(err);
+    }
+};
+
+module.exports = { addAttribute, getAttributesGroupList, getAttributesList, getAttributesListForProduct, deleteAttribute }

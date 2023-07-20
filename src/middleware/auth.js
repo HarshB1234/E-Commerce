@@ -1,6 +1,5 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
 const User = require("../models/register");
 
 const Auth = async (req, res, next) => {

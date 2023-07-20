@@ -20,7 +20,7 @@ const loginUser = async (req, res) => {
             }).then(async (item) => {
                 if (item && await bcrypt.compare(password, item.dataValues.Password)) {
                     const token = await jwt.sign({ Id: item.dataValues.Id }, process.env.JWT_SECRET_KEY);
-                    return res.status(200).json({ "msg": "User login successfully.", token, name: item.dataValues.Name });
+                    return res.status(200).json({ "msg": "User login successfully.", token, name: item.dataValues.Name, admin: item.dataValues.isAdmin });
                 }
 
                 return res.status(401).json({ "msg": "User does not exist or password does not match." });
