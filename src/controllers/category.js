@@ -259,20 +259,6 @@ const categoryAndSubcategoryListById = async (req, res) => {
 
 // Update Main Category, Category and Sub-Category
 
-const updateById = async (type, Id, Name) => {
-    await type.update({
-        Name
-    }, {
-        where: {
-            Id
-        }
-    }).then(() => {
-        return 1;
-    }).catch((err) => {
-        return err;
-    });
-};
-
 const updateMainCategory = async (req, res) => {
     try {
         let { id, name } = req.body;
@@ -281,13 +267,17 @@ const updateMainCategory = async (req, res) => {
             return res.status(400).json({"msg": "Some field is empty."});
         }
 
-        let response = updateById(MainCategory, id, name);
-
-        if (response == 1) {
-            return  res.status(200).json({"msg": "Updated successfully."});
-        }
-
-        res.send(response);
+        await MainCategory.update({
+            Name: name
+        }, {
+            where: {
+                Id: id
+            }
+        }).then(() => {
+            res.status(200).json({"msg": "Updated successfully."});
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
@@ -301,13 +291,17 @@ const updateCategory = async (req, res) => {
             return res.status(400).json({"msg": "Some field is empty."});
         }
 
-        let response = updateById(Category, id, name);
-
-        if (response == 1) {
-            return  res.status(200).json({"msg": "Updated successfully."});
-        }
-
-        res.send(response);
+        await Category.update({
+            Name: name
+        }, {
+            where: {
+                Id: id
+            }
+        }).then(() => {
+            res.status(200).json({"msg": "Updated successfully."});
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
@@ -321,13 +315,17 @@ const updateSubCategory = async (req, res) => {
             return res.status(400).json({"msg": "Some field is empty."});
         }
 
-        let response = updateById(SubCategory, id, name);
-
-        if (response == 1) {
-            return  res.status(200).json({"msg": "Updated successfully."});
-        }
-
-        res.send(response);
+        await SubCategory.update({
+            Name: name
+        }, {
+            where: {
+                Id: id
+            }
+        }).then(() => {
+            res.status(200).json({"msg": "Updated successfully."});
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
@@ -335,29 +333,19 @@ const updateSubCategory = async (req, res) => {
 
 // Delete Main Category, Category and Sub-Category
 
-const deleteById = async (type, Id) => {
-    await type.destroy({
-        where: {
-            Id
-        }
-    }).then(() => {
-        return 1;
-    }).catch((err) => {
-        return err;
-    });
-};
-
 const deleteMainCategory = async (req, res) => {
     try {
         let Id = req.params.id;
 
-        let response = deleteById(MainCategory, Id);
-
-        if (response == 1) {
-            return res.status(200).json({"msg": "Deleted successfully."});
-        }
-
-        res.send(response);
+        await MainCategory.destroy({
+            where: {
+                Id
+            }
+        }).then(() => {
+            res.status(200).json({ "msg": "Deleted successfully." });
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
@@ -367,13 +355,15 @@ const deleteCategory = async (req, res) => {
     try {
         let Id = req.params.id;
 
-        let response = deleteById(Category, Id);
-
-        if (response == 1) {
-            return res.status(200).json({"msg": "Deleted successfully."});
-        }
-
-        res.send(response);
+        await Category.destroy({
+            where: {
+                Id
+            }
+        }).then(() => {
+            res.status(200).json({ "msg": "Deleted successfully." });
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
@@ -383,13 +373,15 @@ const deleteSubCategory = async (req, res) => {
     try {
         let Id = req.params.id;
 
-        let response = deleteById(SubCategory, Id);
-
-        if (response == 1) {
-            return res.status(200).json({"msg": "Deleted successfully."});
-        }
-
-        res.send(response);
+        await SubCategory.destroy({
+            where: {
+                Id
+            }
+        }).then(() => {
+            res.status(200).json({ "msg": "Deleted successfully." });
+        }).catch((err) => {
+            res.send(err);
+        });
     } catch (err) {
         res.send(err);
     }
