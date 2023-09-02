@@ -1,27 +1,96 @@
 const { Op, QueryTypes } = require("sequelize");
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const Product = require("../models/product");
 const sequelize = require("../db/conn");
+const aws = require("aws-sdk");
+
+// AWS Configure
+
+const awsConfig = {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+};
+
+const S3 = new aws.S3(awsConfig);
+
+// Function to upload and delete image
+
+const uploadToS3 = (bufferData, type) => {
+    return new Promise((resolve, reject) => {
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `${Date.now().toString()}.${type}`,
+            Body: bufferData
+        };
+
+        S3.upload(params, (err, data) => {
+            if (err) {
+                reject(err);
+            }
+
+            return resolve(data);
+        })
+    })
+}
+
+const deleteToS3 = (name) => {
+    return new Promise((resolve, reject) => {
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: name,
+        };
+
+        S3.deleteObject(params, (err, data) => {
+            if (err) {
+                reject(err);
+            }
+
+            return resolve(data);
+        })
+    })
+}
 
 // Add Product
 
 const addProduct = async (req, res) => {
     try {
-        let { name, image, brand, description, sizeQuantity, price, attributes, mId, cId, sId, active } = req.body;
+        let { name, brand, description, sizeQuantity, price, attributes, mId, cId, sId, active } = req.body;
+        let image = req.files.image;
 
-        if (!(name && image && brand && description && sizeQuantity && price && attributes && mId && cId && sId)) {
+        if (!(name && brand && description && sizeQuantity && price && attributes && mId && cId && sId)) {
             return res.status(400).json({ "msg": "Some field is empty." });
+        }
+
+        sizeQuantity = JSON.parse(req.body.sizeQuantity);
+        let sizeQuantityToAdd = {};
+
+        for (let i of sizeQuantity) {
+            let k = Object.keys(i);
+            let v = Object.values(i);
+            sizeQuantityToAdd[k[0]] = v[0];
+        }
+
+        var imagePath = [];
+
+        for (let i of image) {
+            let str = i.mimetype;
+            let lastIndex = str.lastIndexOf("/");
+            let type = str.substring(lastIndex + 1);
+            await uploadToS3(i.data, type).then((result) => {
+                imagePath.push(result.Location);
+            });
         }
 
         await Product.create({
             Id: uuid(),
+            U_Id: req.user.Id,
             Name: name,
-            Image: image.toString(),
+            Image: { "images": imagePath },
             Brand: brand,
             Description: description,
-            Size_Quantity: sizeQuantity,
+            Size_Quantity: sizeQuantityToAdd,
             Price: price,
-            Attributes: attributes,
+            Attributes: JSON.parse(attributes),
             M_Id: mId,
             C_Id: cId,
             S_Id: sId,
@@ -43,15 +112,7 @@ const productList = async (req, res) => {
         await Product.findAll({
             attributes: ["Id", "Name", "Image", "Brand", "Price", "Active"]
         }).then((item) => {
-            let finalList = item;
-
-            for (let i = 0; i < finalList.length; i++) {
-                let j = finalList[i];
-                j.Image = j.Image.split(",");
-                finalList.splice(i, 1, j);
-            }
-
-            res.status(200).json(finalList);
+            res.status(200).json(item);
         }).catch((err) => {
             res.send(err);
         })
@@ -60,7 +121,27 @@ const productList = async (req, res) => {
     }
 };
 
-const productListById = async (req, res) => {
+const productListByMainId = async (req, res) => {
+    try {
+        const M_Id = req.params.id;
+
+        await Product.findAll({
+            attributes: ["Id", "Name", "Image", "Brand", "Price"],
+            where: {
+                M_Id,
+                Active: true
+            }
+        }).then((item) => {
+            res.status(200).json(item);
+        }).catch((err) => {
+            res.send(err);
+        });
+    } catch (err) {
+        res.send(err);
+    }
+};
+
+const productListBySubId = async (req, res) => {
     try {
         const S_Id = req.params.id;
 
@@ -71,15 +152,7 @@ const productListById = async (req, res) => {
                 Active: true
             }
         }).then((item) => {
-            let finalList = item;
-
-            for (let i = 0; i < finalList.length; i++) {
-                let j = finalList[i];
-                j.Image = j.Image.split(",");
-                finalList.splice(i, 1, j);
-            }
-
-            res.status(200).json(finalList);
+            res.status(200).json(item);
         }).catch((err) => {
             res.send(err);
         });
@@ -117,7 +190,7 @@ const filterProductList = async (req, res) => {
             }
             if (queryValues[i] == "Max") {
                 price.push(Number(queryKeys[i]));
-                break;
+                // break;
             }
         }
 
@@ -154,21 +227,11 @@ const filterProductList = async (req, res) => {
         };
 
         await sequelize.query(sql, { type: QueryTypes.SELECT }).then((item) => {
-            let finalList = item;
-
-            for (let i = 0; i < finalList.length; i++) {
-                let j = finalList[i];
-                j.Image = j.Image.split(",");
-                finalList.splice(i, 1, j);
-            }
-
-            res.status(200).json(finalList);
+            res.status(200).json(item);
         }).catch((err) => {
-            console.log(err);
             res.send(err);
         });
     } catch (err) {
-        console.log(err, "out");
         res.send(err);
     }
 };
@@ -178,13 +241,11 @@ const productById = async (req, res) => {
         const Id = req.params.id;
 
         await Product.findOne({
-            attributes: ["Id", "Name", "Image", "Brand", "Description", "Size_Quantity", "Price", "Active"],
+            attributes: ["Id", "Name", "Image", "Brand", "Description", "Size_Quantity", "Price"],
             where: {
                 Id
             }
         }).then((item) => {
-            item.Image = item.Image.split(",");
-
             res.status(200).json(item);
         }).catch((err) => {
             res.send(err);
@@ -211,7 +272,7 @@ const activeProduct = async (req, res) => {
                 Id: id
             }
         }).then(() => {
-            res.status(200).json({ "msg": "Updated successfully." });
+            res.status(200).json({ "msg": "Product status updated successfully." });
         }).catch((err) => {
             res.send(err);
         });
@@ -224,29 +285,65 @@ const activeProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        let { id, name, image, brand, description, sizeQuantity, price, attributes, mId, cId, sId, active } = req.body;
+        let { id, name, brand, description, sizeQuantity, price, attributes } = req.body;
+        let image = req.files.image;
 
-        if (!(id && name && image && brand && description && sizeQuantity && attributes && price && mId && cId && sId)) {
+        if (!(id && name && brand && description && sizeQuantity && attributes && price)) {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
+        sizeQuantity = JSON.parse(req.body.sizeQuantity);
+        let sizeQuantityToAdd = {};
+
+        for (let i of sizeQuantity) {
+            let k = Object.keys(i);
+            let v = Object.values(i);
+            sizeQuantityToAdd[k[0]] = v[0];
+        }
+
+        var imagePath = [];
+
+        for (let i of image) {
+            let str = i.mimetype;
+            let lastIndex = str.lastIndexOf("/");
+            let type = str.substring(lastIndex + 1);
+            await uploadToS3(i.data, type).then((result) => {
+                imagePath.push(result.Location);
+            });
+        }
+
+        await Product.findOne({
+            attributes: ["Image"],
+            where: {
+                Id: id
+            }
+        }).then(async (item) => {
+            let image = item.dataValues.Image.images;
+
+            for (let i of image) {
+                let lastIndex = i.lastIndexOf("/");
+                let name = i.substring(lastIndex + 1);
+                await deleteToS3(name).then((result) => {
+                    console.log(result);
+                });
+            }
+        }).catch((err) => {
+            res.send(err);
+        });
+
         await Product.update({
             Name: name,
-            Image: image.toString(),
+            Image: { "images": imagePath },
             Brand: brand,
             Description: description,
-            Size_Quantity: sizeQuantity,
+            Size_Quantity: sizeQuantityToAdd,
             Price: price,
-            Attributes: attributes,
-            M_Id: mId,
-            C_Id: cId,
-            S_Id: sId,
-            Active: active
+            Attributes: JSON.parse(req.body.attributes)
         }, {
             where: {
                 Id: id
             }
-        }).then(() => {
+        }).then((data) => {
             res.status(200).json({ "msg": "Updated successfully." });
         }).catch((err) => {
             res.send(err);
@@ -262,6 +359,25 @@ const deleteProduct = async (req, res) => {
     try {
         const Id = req.params.id;
 
+        await Product.findOne({
+            attributes: ["Image"],
+            where: {
+                Id
+            }
+        }).then(async (item) => {
+            let image = item.dataValues.Image.images;
+
+            for (let i of image) {
+                let lastIndex = i.lastIndexOf("/");
+                let name = i.substring(lastIndex + 1);
+                await deleteToS3(name).then((result) => {
+                    console.log(result);
+                });
+            }
+        }).catch((err) => {
+            res.send(err);
+        });
+
         await Product.destroy({
             where: {
                 Id
@@ -276,4 +392,4 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { addProduct, productList, productListById, filterProductList, productById, activeProduct, updateProduct, deleteProduct }
+module.exports = { addProduct, productList, productListByMainId, productListBySubId, filterProductList, productById, activeProduct, updateProduct, deleteProduct }

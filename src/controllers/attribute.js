@@ -66,20 +66,21 @@ const getAttributesList = async (req, res) => {
     }
 };
 
-const getAttributesListForProduct = async (req, res) => {
+const getListByName = async (req, res) => {
     try {
+        const G_Name = req.params.name;
+
         await Attribute.findAll({
-            attributes: ["Name", "G_Name"],
-            order: [["G_Name"]]
+            attributes: ["Name"],
+            where: {
+                G_Name
+            }
         }).then((list) => {
-            var listToSend = {};
+            var listToSend = [];
 
             for (let i in list){
                 let value = Object.values(list[i].dataValues);
-                let k = value[0];
-                let v = value[1];
-
-                listToSend[k] = v;
+                listToSend.push(value[0]);
             }
 
             res.status(200).json(listToSend);
@@ -111,4 +112,4 @@ const deleteAttribute = async (req, res) => {
     }
 };
 
-module.exports = { addAttribute, getAttributesGroupList, getAttributesList, getAttributesListForProduct, deleteAttribute }
+module.exports = { addAttribute, getAttributesGroupList, getAttributesList, getListByName, deleteAttribute }

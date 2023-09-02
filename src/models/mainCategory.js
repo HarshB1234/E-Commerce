@@ -10,6 +10,10 @@ const MainCategory = sequelize.define("MainCategory", {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
+  },
+  Image:{
+    type: DataTypes.TEXT("long"),
+    allowNull: false
   }
 });
 

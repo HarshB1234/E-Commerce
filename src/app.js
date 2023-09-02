@@ -15,10 +15,12 @@ const SubCategory = require("./models/subCategory");
 const Product = require("./models/product");
 const Attribute = require("./models/attribute");
 const Address = require("./models/address");
+const Banner = require("./models/banner");
 
 // Package
 const cors = require("cors");
 const express = require("express");
+const fileUpload = require("express-fileupload");
 
 // PORT
 const port = process.env.PORT || 8000;
@@ -30,6 +32,8 @@ const category_router = require("./routes/category");
 const product_router = require("./routes/product");
 const attribute_router = require("./routes/attribute");
 const address_router = require("./routes/address");
+// const payment_router = require("./routes/payment");
+const banner_router = require("./routes/banner");
 
 // Express App
 const app = express();
@@ -42,6 +46,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: false }));
+app.use(fileUpload());
 
 // Controllers
 app.use("/register", register_router);
@@ -50,6 +55,8 @@ app.use("/category", category_router);
 app.use("/product", product_router);
 app.use("/attribute", attribute_router);
 app.use("/address", address_router);
+// app.use("/payment", payment_router);
+app.use("/banner", banner_router);
 
 // Listening
 app.listen(port, () => {

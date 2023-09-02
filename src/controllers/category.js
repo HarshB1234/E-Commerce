@@ -7,15 +7,16 @@ const SubCategory = require("../models/subCategory");
 
 const addMainCategory = async (req, res) => {
     try {
-        let { name } = req.body;
+        let { name, image } = req.body;
 
-        if (!name) {
-            return res.status(400).json({"msg": "Some field is empty."});
+        if (!(name && image)) {
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         await MainCategory.create({
             Id: uuid(),
-            Name: name
+            Name: name,
+            Image: image
         }).then(() => {
             res.status(201).json({ "msg": "Main Category created." });
         }).catch((err) => {
@@ -31,7 +32,7 @@ const addCategory = async (req, res) => {
         let { name, mId } = req.body;
 
         if (!(name && mId)) {
-            return res.status(400).json({"msg": "Some field is empty."});
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         const [category, created] = await Category.findOrCreate({
@@ -61,7 +62,7 @@ const addSubCategory = async (req, res) => {
         let { name, cId, mId } = req.body;
 
         if (!(name && cId && mId)) {
-            return res.status(400).json({"msg": "Some field is empty."});
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         const [subCategory, created] = await SubCategory.findOrCreate({
@@ -94,7 +95,7 @@ const addSubCategory = async (req, res) => {
 const mainCategoryList = async (req, res) => {
     try {
         await MainCategory.findAll({
-            attributes: ["Id", "Name"]
+            attributes: ["Id", "Name", "Image"]
         }).then((list) => {
             res.status(200).json(list);
         }).catch((err) => {
@@ -261,20 +262,21 @@ const categoryAndSubcategoryListById = async (req, res) => {
 
 const updateMainCategory = async (req, res) => {
     try {
-        let { id, name } = req.body;
+        let { id, name, image } = req.body;
 
-        if (!(id && name)) {
-            return res.status(400).json({"msg": "Some field is empty."});
+        if (!(id && name && image)) {
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         await MainCategory.update({
-            Name: name
+            Name: name,
+            Image: image
         }, {
             where: {
                 Id: id
             }
         }).then(() => {
-            res.status(200).json({"msg": "Updated successfully."});
+            res.status(200).json({ "msg": "Updated successfully." });
         }).catch((err) => {
             res.send(err);
         });
@@ -288,7 +290,7 @@ const updateCategory = async (req, res) => {
         let { id, name } = req.body;
 
         if (!(id && name)) {
-            return res.status(400).json({"msg": "Some field is empty."});
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         await Category.update({
@@ -298,7 +300,7 @@ const updateCategory = async (req, res) => {
                 Id: id
             }
         }).then(() => {
-            res.status(200).json({"msg": "Updated successfully."});
+            res.status(200).json({ "msg": "Updated successfully." });
         }).catch((err) => {
             res.send(err);
         });
@@ -312,7 +314,7 @@ const updateSubCategory = async (req, res) => {
         let { id, name } = req.body;
 
         if (!(id && name)) {
-            return res.status(400).json({"msg": "Some field is empty."});
+            return res.status(400).json({ "msg": "Some field is empty." });
         }
 
         await SubCategory.update({
@@ -322,7 +324,7 @@ const updateSubCategory = async (req, res) => {
                 Id: id
             }
         }).then(() => {
-            res.status(200).json({"msg": "Updated successfully."});
+            res.status(200).json({ "msg": "Updated successfully." });
         }).catch((err) => {
             res.send(err);
         });

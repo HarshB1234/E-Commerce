@@ -9,12 +9,16 @@ const Product = sequelize.define("Product", {
     type: DataTypes.UUID,
     primaryKey: true
   },
+  U_Id: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
   Name: {
     type: DataTypes.STRING,
     allowNull: false
   },
   Image: {
-    type: DataTypes.STRING,
+    type: DataTypes.JSON,
     allowNull: false
   },
   Brand:{
