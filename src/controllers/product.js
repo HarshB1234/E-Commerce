@@ -1,6 +1,8 @@
 const { Op, QueryTypes } = require("sequelize");
 const { uuid } = require("uuidv4");
+const jwt = require("jsonwebtoken");
 const Product = require("../models/product");
+const Wishlist = require("../models/wishlist");
 const sequelize = require("../db/conn");
 const aws = require("aws-sdk");
 
@@ -54,10 +56,10 @@ const deleteToS3 = (name) => {
 
 const addProduct = async (req, res) => {
     try {
-        let { name, brand, description, sizeQuantity, price, attributes, mId, cId, sId, active } = req.body;
+        let { name, brand, description, sizeQuantity, price, sPrice, attributes, mId, cId, sId, active } = req.body;
         let image = req.files.image;
 
-        if (!(name && brand && description && sizeQuantity && price && attributes && mId && cId && sId)) {
+        if (!(name && brand && description && sizeQuantity && price && sPrice && attributes && mId && cId && sId)) {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
@@ -83,13 +85,13 @@ const addProduct = async (req, res) => {
 
         await Product.create({
             Id: uuid(),
-            U_Id: req.user.Id,
             Name: name,
             Image: { "images": imagePath },
             Brand: brand,
             Description: description,
             Size_Quantity: sizeQuantityToAdd,
             Price: price,
+            S_Price: sPrice,
             Attributes: JSON.parse(attributes),
             M_Id: mId,
             C_Id: cId,
@@ -110,7 +112,7 @@ const addProduct = async (req, res) => {
 const productList = async (req, res) => {
     try {
         await Product.findAll({
-            attributes: ["Id", "Name", "Image", "Brand", "Price", "Active"]
+            attributes: ["Id", "Name", "Image", "Brand", "Price", "S_Price", "Active"]
         }).then((item) => {
             res.status(200).json(item);
         }).catch((err) => {
@@ -121,41 +123,91 @@ const productList = async (req, res) => {
     }
 };
 
-const productListByMainId = async (req, res) => {
+const productListById = async (req, res) => {
     try {
-        const M_Id = req.params.id;
+        const {id, token} = req.params;
 
-        await Product.findAll({
-            attributes: ["Id", "Name", "Image", "Brand", "Price"],
-            where: {
-                M_Id,
-                Active: true
-            }
-        }).then((item) => {
-            res.status(200).json(item);
-        }).catch((err) => {
-            res.send(err);
-        });
-    } catch (err) {
-        res.send(err);
-    }
-};
+        if(token != "nToken"){
+            let list;
+            const verifyUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-const productListBySubId = async (req, res) => {
-    try {
-        const S_Id = req.params.id;
+            await Wishlist.findOne({
+                attributes: ["P_Id"],
+                where: {
+                    U_Id: verifyUser.Id
+                }
+            }).then(async (item) => {
+                if(item){
+                    list = item.dataValues.P_Id.products;
 
-        await Product.findAll({
-            attributes: ["Id", "Name", "Image", "Brand", "Price"],
-            where: {
-                S_Id,
-                Active: true
-            }
-        }).then((item) => {
-            res.status(200).json(item);
-        }).catch((err) => {
-            res.send(err);
-        });
+                    await Product.findAll({
+                        attributes: ["Id", "Name", "Image", "Brand", "Price", "S_Price", "Wishlist_Status"],
+                        where: {
+                            [Op.or]: {
+                                M_Id: id,
+                                S_Id: id
+                            },
+                            Active: true
+                        },
+                        offset: ((Number(req.params.number)-1)*15),
+                        limit: 15
+                    }).then((item) => {
+                        let productList = item;
+            
+                        for(let i in productList){
+                            let temp = productList[i].dataValues;
+                            let id = temp.Id;
+                            let exists = list.includes(id);
+                            
+                            if(exists){
+                                temp.Wishlist_Status = 1;
+                                list.splice(i, 1, temp);
+                            }
+                        }
+            
+                        return res.status(200).json(productList);
+                    }).catch((err) => {
+                        return res.send(err);
+                    });
+                }else{
+                    await Product.findAll({
+                        attributes: ["Id", "Name", "Image", "Brand", "Price", "S_Price", "Wishlist_Status"],
+                        where: {
+                            [Op.or]: {
+                                M_Id: id,
+                                S_Id: id
+                            },
+                            Active: true
+                        },
+                        offset: ((Number(req.params.number)-1)*15),
+                        limit: 15
+                    }).then((item) => {
+                        return res.status(200).json(item);
+                    }).catch((err) => {
+                        return res.send(err);
+                    });
+                }
+            }).catch((err) => {
+                return res.send(err);
+            });
+        }else{
+            await Product.findAll({
+                attributes: ["Id", "Name", "Image", "Brand", "Price", "S_Price", "Wishlist_Status"],
+                where: {
+                    [Op.or]: {
+                        M_Id: id,
+                        S_Id: id
+                    },
+                    Active: true
+                },
+                offset: ((Number(req.params.number)-1)*15),
+                limit: 15
+            }).then((item) => {
+                return res.status(200).json(item);
+            }).catch((err) => {
+                return res.send(err);
+            });
+        }
     } catch (err) {
         res.send(err);
     }
@@ -164,67 +216,52 @@ const productListBySubId = async (req, res) => {
 const filterProductList = async (req, res) => {
     try {
         let query = req.query;
-        let S_Id = req.params.id;
+        let id = req.params.id;
         let queryKeys = Object.keys(query);
         let queryValues = Object.values(query);
 
-        let sql = `SELECT Id, Name, Image, Brand, Price FROM Products AS Product WHERE Product.S_Id = "${S_Id}" AND Product.Active = true`;
+        let sql = `SELECT Id, Name, Image, Brand, Price, S_Price FROM Products AS Product WHERE Product.M_Id = "${id}" OR Product.S_Id = "${id}"AND Product.Active = true`;
 
-        let size = [];
-        let color = [];
-        let brand = [];
-        let price = [];
+        let attributesObject = {};
+
+        for(let i of queryValues){
+            if(i == "Min" || i == "Max"){
+                continue;
+            }
+            attributesObject[i] = [];
+        }
+
+        let price = {};
 
         for (let i in queryValues) {
-            if (queryValues[i] == "Size") {
-                size.push(queryKeys[i]);
-            }
-            if (queryValues[i] == "Color") {
-                color.push(queryKeys[i]);
-            }
-            if (queryValues[i] == "Brand") {
-                brand.push(queryKeys[i]);
-            }
-            if (queryValues[i] == "Min") {
-                price.push(Number(queryKeys[i]));
-            }
-            if (queryValues[i] == "Max") {
-                price.push(Number(queryKeys[i]));
-                // break;
+            if(i == "Min" || i == "Max"){
+                price[i] = queryKeys[i];
+            }else{
+                for(let k in attributesObject){  
+                    if (k == queryValues[i]) {
+                        let temp = attributesObject[k];
+                        temp.push(queryKeys[i]);
+                        attributesObject[k] = temp;
+                    }
+                }
             }
         }
 
-        for (let i in size) {
-            if (i == 0) {
-                sql += " AND ";
-            }
-            sql += `json_unquote(json_extract(Product.Attributes,'$.\"${size[i]}\"')) = 'Size'`;
-            if (i != (size.length - 1)) {
-                sql += " OR ";
-            }
-        }
-        for (let i in color) {
-            if (i == 0) {
-                sql += " AND ";
-            }
-            sql += `json_unquote(json_extract(Product.Attributes,'$.\"${color[i]}\"')) = 'Color'`;
-            if (i != (color.length - 1)) {
-                sql += " OR ";
-            }
-        }
-        for (let i in brand) {
-            if (i == 0) {
-                sql += " AND ";
-            }
-            sql += `json_unquote(json_extract(Product.Attributes,'$.\"${brand[i]}\"')) = 'Brand'`;
-            if (i != (brand.length - 1)) {
-                sql += " OR ";
+        for(let i in attributesObject){
+            let temp = attributesObject[i];
+            for(let j in temp){
+                if (j == 0) {
+                    sql += " AND ";
+                }
+                sql += `json_unquote(json_extract(Product.Attributes,'$.\"${temp[j]}\"')) = \'${i}\'`;
+                if (i != (temp.length - 1)) {
+                    sql += " OR ";
+                }
             }
         }
 
-        if (price.length > 0) {
-            sql += ` AND Product.Price BETWEEN ${price[0]} AND ${price[1]}`;
-        };
+        sql += ` AND Product.Price BETWEEN ${price["Min"]} AND ${price["Max"]} LIMIT 15 OFFSET ${((Number(req.params.number)-1)*15)},
+        limit: 15`;
 
         await sequelize.query(sql, { type: QueryTypes.SELECT }).then((item) => {
             res.status(200).json(item);
@@ -236,12 +273,86 @@ const filterProductList = async (req, res) => {
     }
 };
 
+// const filterProductList = async (req, res) => {
+//     try {
+//         let query = req.query;
+//         let S_Id = req.params.id;
+//         let queryKeys = Object.keys(query);
+//         let queryValues = Object.values(query);
+
+//         let sql = `SELECT Id, Name, Image, Brand, Price, S_Price FROM Products AS Product WHERE Product.S_Id = "${S_Id}" AND Product.Active = true`;
+
+//         let size = [];
+//         let color = [];
+//         let brand = [];
+//         let price = [0, 1];
+
+//         for(let i in queryValues){
+//             if (queryValues[i] == "Size") {
+//                 size.push(queryKeys[i]);
+//             }
+//             if (queryValues[i] == "Color") {
+//                 color.push(queryKeys[i]);
+//             }
+//             if (queryValues[i] == "Brand") {
+//                 brand.push(queryKeys[i]);
+//             }
+//             if (queryValues[i] == "Min") {
+//                 price.splice(0, 1, Number(queryKeys[i]));
+//             }
+//             if (queryValues[i] == "Max") {
+//                 price.splice(1, 1, Number(queryKeys[i]));
+//             }
+//         }
+
+//         for (let i in size) {
+//             if (i == 0) {
+//                 sql += " AND ";
+//             }
+//             sql += `json_unquote(json_extract(Product.Attributes,'$.\"${size[i]}\"')) = 'Size'`;
+//             if (i != (size.length - 1)) {
+//                 sql += " OR ";
+//             }
+//         }
+//         for (let i in color) {
+//             if (i == 0) {
+//                 sql += " AND ";
+//             }
+//             sql += `json_unquote(json_extract(Product.Attributes,'$.\"${color[i]}\"')) = 'Color'`;
+//             if (i != (color.length - 1)) {
+//                 sql += " OR ";
+//             }
+//         }
+//         for (let i in brand) {
+//             if (i == 0) {
+//                 sql += " AND ";
+//             }
+//             sql += `json_unquote(json_extract(Product.Attributes,'$.\"${brand[i]}\"')) = 'Brand'`;
+//             if (i != (brand.length - 1)) {
+//                 sql += " OR ";
+//             }
+//         }
+
+//         if (price.length > 0) {
+//             sql += ` AND Product.Price BETWEEN ${price[0]} AND ${price[1]}`;
+//         };
+
+//         await sequelize.query(sql, { type: QueryTypes.SELECT }).then((item) => {
+//             res.status(200).json(item);
+//         }).catch((err) => {
+//             res.send(err);
+//         });
+//     } catch (err) {
+//         res.send(err);
+//     }
+// };
+
 const productById = async (req, res) => {
     try {
         const Id = req.params.id;
 
         await Product.findOne({
-            attributes: ["Id", "Name", "Image", "Brand", "Description", "Size_Quantity", "Price"],
+            attributes: ["Id", "Name", "Image", "Brand", "Description", "Size_Quantity", "Price", "S_Price", "Attributes"],
             where: {
                 Id
             }
@@ -285,10 +396,10 @@ const activeProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        let { id, name, brand, description, sizeQuantity, price, attributes } = req.body;
+        let { id, name, brand, description, sizeQuantity, price, sPrice, attributes } = req.body;
         let image = req.files.image;
 
-        if (!(id && name && brand && description && sizeQuantity && attributes && price)) {
+        if (!(id && name && brand && description && sizeQuantity && attributes && price && sPrice)) {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
@@ -338,6 +449,7 @@ const updateProduct = async (req, res) => {
             Description: description,
             Size_Quantity: sizeQuantityToAdd,
             Price: price,
+            S_Price: sPrice,
             Attributes: JSON.parse(req.body.attributes)
         }, {
             where: {
@@ -392,4 +504,4 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { addProduct, productList, productListByMainId, productListBySubId, filterProductList, productById, activeProduct, updateProduct, deleteProduct }
+module.exports = { addProduct, productList, productListById, filterProductList, productById, activeProduct, updateProduct, deleteProduct }

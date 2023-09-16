@@ -9,12 +9,12 @@ router.route("/add").post(Auth, addCategory);
 router.route("/sub/add").post(Auth, addSubCategory);
 
 // Get
-router.route("/main/list").get(Auth, mainCategoryList);
-router.route("/list").get(Auth, categoryList);
-router.route("/sub/list").get(Auth, subCategoryList);
-router.route("/list/:mid").get(Auth, categoryListById);
-router.route("/sub/list/:mid/:cid").get(Auth, subCategoryListById);
-router.route("/:mid").get(Auth, categoryAndSubcategoryListById);
+router.route("/main/list").get(mainCategoryList);
+router.route("/list").get(categoryList);
+router.route("/sub/list").get(subCategoryList);
+router.route("/list/:mid").get(categoryListById);
+router.route("/sub/list/:mid/:cid").get(subCategoryListById);
+router.route("/:mid").get(categoryAndSubcategoryListById);
 
 // Update
 router.route("/main/update").patch(Auth, updateMainCategory);

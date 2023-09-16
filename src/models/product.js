@@ -9,10 +9,6 @@ const Product = sequelize.define("Product", {
     type: DataTypes.UUID,
     primaryKey: true
   },
-  U_Id: {
-    type: DataTypes.UUID,
-    allowNull: false
-  },
   Name: {
     type: DataTypes.STRING,
     allowNull: false
@@ -34,6 +30,10 @@ const Product = sequelize.define("Product", {
     allowNull: false
   },
   Price: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  S_Price: {
     type: DataTypes.FLOAT,
     allowNull: false
   },
@@ -68,7 +68,12 @@ const Product = sequelize.define("Product", {
   Active: {
     type: DataTypes.BOOLEAN,
     allowNull: false
-  } 
+  },
+  Wislist_Status: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  }
 });
 
 module.exports = Product

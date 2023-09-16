@@ -22,7 +22,7 @@ const addAddress = async (req, res) => {
             City: city,
             State: state
         }).then(() => {
-            res.status(201).json({ "msg": "Address created." })
+            res.status(201).json({ "msg": "Added successfully." });
         }).catch((err) => {
             res.send(err);
         })
@@ -37,8 +37,8 @@ const getAddressList = async (req, res) => {
     try {
         await Address.findAll({
             attributes: { exclude: ["U_Id"] }
-        }).then((list) => {
-            res.status(200).json(list);
+        }).then((item) => {
+            res.status(200).json(item);
         }).catch((err) => {
             res.send(err);
         });

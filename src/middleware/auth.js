@@ -14,7 +14,7 @@ const Auth = async (req, res, next) => {
         req.user = user.dataValues;
         next(); 
     } catch (err) {
-        res.status(401).json({"msg": "User does not exist."});
+        res.status(401).json({"msg": "Register Or Login again."});
     }
 };
 

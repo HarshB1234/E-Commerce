@@ -7,9 +7,9 @@ const { addAttribute, getAttributesGroupList, getAttributesList, getListByName, 
 router.route("/add").post(Auth, addAttribute);
 
 // Get
-router.route("/group").get(Auth, getAttributesGroupList);
-router.route("/list").get(Auth, getAttributesList);
-router.route("/list/:name").get(Auth, getListByName);
+router.route("/group").get(getAttributesGroupList);
+router.route("/list").get(getAttributesList);
+router.route("/list/:name").get(getListByName);
 
 // Delete
 router.route("/delete/:id").delete(Auth, deleteAttribute);

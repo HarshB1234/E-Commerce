@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../db/conn");
+const User = require("./register");
 
 const Address = sequelize.define("Address", {
   Id: {
@@ -8,7 +9,11 @@ const Address = sequelize.define("Address", {
   },
   U_Id: {
     type: DataTypes.UUID,
-    allowNull: false
+    onDelete: "CASCADE",
+    references: { 
+        model: User,
+        key: "Id"
+    }
   },
   Name: {
     type: DataTypes.STRING,

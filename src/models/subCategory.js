@@ -27,6 +27,10 @@ const SubCategory = sequelize.define("SubCategory", {
         model: MainCategory,
         key: "Id"
     }
+  },
+  Image:{
+    type: DataTypes.TEXT("long"),
+    allowNull: false
   }
 });
 
