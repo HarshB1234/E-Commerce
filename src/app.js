@@ -14,11 +14,15 @@ const Category = require("./models/category");
 const SubCategory = require("./models/subCategory");
 const Product = require("./models/product");
 const Attribute = require("./models/attribute");
-// const Address = require("./models/address");
 const Banner = require("./models/banner");
-const Wishlist = require("./models/wishlist");
 const Policy = require("./models/policy");
 const Contact = require("./models/contact");
+const Wishlist = require("./models/wishlist");
+const Cart = require("./models/cart");
+const Coupon = require("./models/coupon");
+const Address = require("./models/address");
+const Order = require("./models/order");
+const OrderItem = require("./models/orderItem");
 
 // Package
 const cors = require("cors");
@@ -34,12 +38,16 @@ const login_router = require("./routes/login");
 const category_router = require("./routes/category");
 const product_router = require("./routes/product");
 const attribute_router = require("./routes/attribute");
-// const address_router = require("./routes/address");
-// const payment_router = require("./routes/payment");
 const banner_router = require("./routes/banner");
-const wishlist_router = require("./routes/wishlist");
 const policy_router = require("./routes/policy");
 const contact_router = require("./routes/contact");
+const wishlist_router = require("./routes/wishlist");
+const coupon_router = require("./routes/coupon");
+const cart_router = require("./routes/cart");
+const address_router = require("./routes/address");
+const order_router = require("./routes/order");
+const order_item_router = require("./routes/orderItem");
+const payment_router = require("./routes/payment");
 
 // Express App
 const app = express();
@@ -60,12 +68,16 @@ app.use("/login", login_router);
 app.use("/category", category_router);
 app.use("/product", product_router);
 app.use("/attribute", attribute_router);
-// app.use("/address", address_router);
-// app.use("/payment", payment_router);
 app.use("/banner", banner_router);
-app.use("/wishlist", wishlist_router);
 app.use("/policy", policy_router);
 app.use("/contact", contact_router);
+app.use("/wishlist", wishlist_router);
+app.use("/coupon", coupon_router);
+app.use("/cart", cart_router);
+app.use("/address", address_router);
+app.use("/order", order_router);
+app.use("/orderitem", order_item_router);
+app.use("/payment", payment_router);
 
 // Listening
 app.listen(port, () => {

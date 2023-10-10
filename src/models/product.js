@@ -43,36 +43,28 @@ const Product = sequelize.define("Product", {
   },
   M_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: MainCategory,
-        key: "Id"
-    }
+    allowNull: false
   },
   C_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: Category,
-        key: "Id"
-    }
+    allowNull: false
   },
   S_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: SubCategory,
-        key: "Id"
-    }
+    allowNull: false
+  },
+  Wishlist_Status: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   },
   Active: {
     type: DataTypes.BOOLEAN,
     allowNull: false
   },
-  Wislist_Status: {
+  Sale: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false
+    allowNull: false
   }
 });
 

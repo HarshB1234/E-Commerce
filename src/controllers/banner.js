@@ -78,7 +78,7 @@ const addBannerImage = async (req, res) => {
             });
 
             if (i == (imagePath.length - 1)) {
-                res.status(201).json({ "msg": "Images added." });
+                res.status(201).json({ "msg": "Banner added successfully." });
             }
         }
     } catch (err) {
@@ -92,8 +92,8 @@ const getBannerImage = async (req, res) => {
     try {
         await Banner.findAll({
             attributes: ["Id", "Image", "Sale"]
-        }).then((item) => {
-            res.status(200).json(item);
+        }).then((list) => {
+            res.status(200).send(list);
         }).catch((err) => {
             res.send(err);
         })
@@ -113,17 +113,17 @@ const deleteBannerImageById = async (req, res) => {
             where: {
                 Id
             }
-        }).then(async (item) => {
-            let image = item.dataValues.Image;
+        }).then(async (image) => {
+            let imageLink = image.dataValues.Image;
 
-            let lastIndex = image.lastIndexOf("/");
-            let name = image.substring(lastIndex + 1);
+            let lastIndex = imageLink.lastIndexOf("/");
+            let name = imageLink.substring(lastIndex + 1);
 
             await deleteToS3(name).then((result) => {
                 console.log(result);
             });
         }).catch((err) => {
-            res.send(err);
+            return res.send(err);
         });
 
         await Banner.destroy({
@@ -131,7 +131,7 @@ const deleteBannerImageById = async (req, res) => {
                 Id
             }
         }).then(() => {
-            return res.status(200).json({ "msg": "Deleted successfully." });
+            return res.status(200).json({ "msg": "Banner deleted successfully." });
         }).catch((err) => {
             res.send(err);
         });

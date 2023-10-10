@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const Address = require("../models/address");
 
 // Add Address
@@ -22,7 +22,7 @@ const addAddress = async (req, res) => {
             City: city,
             State: state
         }).then(() => {
-            res.status(201).json({ "msg": "Added successfully." });
+            res.status(201).json({ "msg": "Address added successfully." });
         }).catch((err) => {
             res.send(err);
         })
@@ -37,8 +37,8 @@ const getAddressList = async (req, res) => {
     try {
         await Address.findAll({
             attributes: { exclude: ["U_Id"] }
-        }).then((item) => {
-            res.status(200).json(item);
+        }).then((list) => {
+            res.status(200).send(list);
         }).catch((err) => {
             res.send(err);
         });
@@ -51,14 +51,12 @@ const getAddressList = async (req, res) => {
 
 const deleteAddress = async (req, res) => {
     try {
-        const Id = req.params.id;
-
         await Address.destroy({
             where: {
-                Id
+                Id: req.params.id
             }
         }).then(() => {
-            res.status(200).json({ "msg": "Deleted successfully." });
+            res.status(200).json({ "msg": "Address deleted successfully." });
         }).catch((err) => {
             res.send(err);
         });

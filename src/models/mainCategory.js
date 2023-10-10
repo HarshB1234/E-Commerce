@@ -12,7 +12,7 @@ const MainCategory = sequelize.define("MainCategory", {
     unique: true
   },
   Image:{
-    type: DataTypes.TEXT("long"),
+    type: DataTypes.STRING,
     allowNull: false
   }
 });

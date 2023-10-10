@@ -13,7 +13,7 @@ const Wishlist = sequelize.define("Wishlist", {
   },
   P_Id: {
     type: DataTypes.JSON,
-    defaultValue: false
+    allowNull: false
   },
 });
 

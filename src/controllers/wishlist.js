@@ -26,9 +26,9 @@ const addToWishlist = async (req, res) => {
                     U_Id: req.user.Id,
                     P_Id: { "products": productList }
                 }).then(() => {
-                    return res.status(201).json({ "msg": "Product added in wishlist." });
+                    res.status(201).json({ "msg": "Product added in wishlist." });
                 }).catch((err) => {
-                    return res.send(err);
+                    res.send(err);
                 }); 
             }else{
                 let productList = item.dataValues.P_Id.products;
@@ -41,9 +41,9 @@ const addToWishlist = async (req, res) => {
                         U_Id: req.user.Id,
                     }
                 }).then(() => {
-                    return res.status(201).json({ "msg": "Product added in wishlist." });
+                    res.status(201).json({ "msg": "Product added in wishlist." });
                 }).catch((err) => {
-                    return res.send(err);
+                    res.send(err);
                 });
             }
         }).catch((err) => {
@@ -65,9 +65,9 @@ const wishlistList = async (req, res) => {
             where: {
                 U_Id: req.user.Id
             }
-        }).then(async (item) => {
-            if(item){
-                let list = item.dataValues.P_Id.products;
+        }).then(async (pId) => {
+            if(pId){
+                let list = pId.dataValues.P_Id.products;
     
                 for(let i of list){
                     await Product.findOne({
@@ -75,16 +75,18 @@ const wishlistList = async (req, res) => {
                         where: {
                             Id: i
                         }
-                    }).then((item) => {
-                        listToSend.push(item);
+                    }).then((details) => {
+                        if(details){
+                            listToSend.push(details);
+                        }
                     }).catch((err) => {
-                        res.send(err);
+                        return res.send(err);
                     })
                 }
     
-                return res.status(200).json(listToSend);
+                res.status(200).json(listToSend);
             }else{
-                return res.status(200).json(listToSend);
+                res.status(200).json(listToSend);
             }
         }).catch((err) => {
             res.send(err);
@@ -105,8 +107,8 @@ const deleteProduct = async (req, res) => {
             where: {
                 U_Id: req.user.Id
             }
-        }).then(async (item) => {
-            let list = item.dataValues.P_Id.products;
+        }).then(async (pId) => {
+            let list = pId.dataValues.P_Id.products;
             let pIndex = list.indexOf(Id);
             list.splice(pIndex, 1);
 
@@ -117,9 +119,9 @@ const deleteProduct = async (req, res) => {
                     U_Id: req.user.Id
                 }
             }).then(() => {
-                return res.status(200).json({ "msg": "Product deleted successfully." });
+                res.status(200).json({ "msg": "Product removed from wishlist." });
             }).catch((err) => {
-                return res.send(err);
+                res.send(err);
             }); 
         }).catch((err) => {
             res.send(err);

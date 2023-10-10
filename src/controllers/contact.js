@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const Contact = require("../models/contact");
 
 // Add Contact Details
@@ -24,7 +24,7 @@ const addContactDetails = async (req, res) => {
             }
 
             res.send(err);
-        })
+        });
     } catch (err) {
         res.send(err);
     }
@@ -36,8 +36,8 @@ const getContactDetails = async (req, res) => {
     try {
         await Contact.findAll({
             attributes: ["Id", "Mobile", "Email", "Address"]
-        }).then((item) => {
-            res.status(200).json(item);
+        }).then((details) => {
+            res.status(200).send(details);
         }).catch((err) => {
             res.send(err);
         });
@@ -65,7 +65,7 @@ const updateContactDetails = async (req, res) => {
                 Id: id
             }
         }).then(() => {
-            res.status(201).json({ "msg": "Contact details updated successfully." });
+            res.status(200).json({ "msg": "Contact details updated successfully." });
         }).catch((err) => {
             if(err.errors[0].type == "Validation error"){
                 return res.status(409).json({ "msg": "Email is invalid." });

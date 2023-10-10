@@ -14,22 +14,14 @@ const SubCategory = sequelize.define("SubCategory", {
   },
   C_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: Category,
-        key: "Id"
-    }
+    allowNull: false
   },
   M_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: MainCategory,
-        key: "Id"
-    }
+    allowNull: false
   },
   Image:{
-    type: DataTypes.TEXT("long"),
+    type: DataTypes.STRING,
     allowNull: false
   }
 });

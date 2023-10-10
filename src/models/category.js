@@ -13,11 +13,7 @@ const Category = sequelize.define('Category', {
   },
   M_Id: {
     type: DataTypes.UUID,
-    onDelete: "CASCADE",
-    references: {
-        model: MainCategory,
-        key: 'Id'
-    }
+    allowNull: false
   }
 });
 

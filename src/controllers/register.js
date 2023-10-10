@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const User = require("../models/register");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -13,23 +13,31 @@ const registerUser = async (req, res) => {
 
         password = await bcrypt.hash(password, 10);
 
-        await User.create({
-            Id: uuid(),
-            Name: name,
-            Email: email,
-            Password: password
+        await User.findOne({
+            where: {
+                Email: email
+            } 
         }).then(async (item) => {
-            const token = await jwt.sign({ Id: item.dataValues.Id }, process.env.JWT_SECRET_KEY);
-            return res.status(201).json({ "msg": "User created.", token, name: item.dataValues.Name });
-        }).catch((err) => {
-            if(err.errors[0].type == "unique violation"){
+            if(item){
                 return res.status(409).json({ "msg": "User already exists." });
-            }
+            }else{
+                await User.create({
+                    Id: uuid(),
+                    Name: name,
+                    Email: email,
+                    Password: password
+                }).then(async (item) => {
+                    const token = await jwt.sign({ Id: item.dataValues.Id }, process.env.JWT_SECRET_KEY);
+                    return res.status(201).json({ "msg": "User created.", token, name: item.dataValues.Name });
+                }).catch((err) => {
+                    if(err.errors[0].type == "Validation error"){
+                        return res.status(409).json({ "msg": "Email is invalid." });
+                    }
 
-            if(err.errors[0].type == "Validation error"){
-                return res.status(409).json({ "msg": "Email is invalid." });
+                    res.send(err);
+                });
             }
-
+        }).catch((err) => {
             res.send(err);
         });
     } catch (err) {

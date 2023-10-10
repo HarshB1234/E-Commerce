@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const Attribute = require("../models/attribute");
 
 // Add Attribute
@@ -16,7 +16,7 @@ const addAttribute = async (req, res) => {
             Name: name,
             G_Name: g_name
         }).then(() => {
-            res.status(201).json({ "msg": "Attribute created." })
+            res.status(201).json({ "msg": "Attribute added successfully." })
         }).catch((err) => {
             res.status(409).json({ "msg": "Attribute already exists." });
         })
@@ -33,16 +33,16 @@ const getAttributesGroupList = async (req, res) => {
             attributes: ["G_Name"],
             group: ["G_Name"]
         }).then((list) => {
-            var listToSend = [];
+            let listToSend = [];
 
             for (let i in list){
                 let value = Object.values(list[i].dataValues);
-                console.log(value);
                 let v = value[0];
 
                 listToSend.push(v);
             }
-            res.status(200).json(listToSend);
+
+            res.status(200).send(listToSend);
         }).catch((err) => {
             res.send(err);
         });
@@ -55,9 +55,9 @@ const getAttributesList = async (req, res) => {
     try {
         await Attribute.findAll({
             attributes: ["Id", "Name", "G_Name"],
-            order: [["G_Name"]]
+            order: [["G_Name"], ["Name"]]
         }).then((list) => {
-            res.status(200).json(list);
+            res.status(200).send(list);
         }).catch((err) => {
             res.send(err);
         });
@@ -72,18 +72,19 @@ const getListByName = async (req, res) => {
 
         await Attribute.findAll({
             attributes: ["Name"],
+            order: [["Name"]],
             where: {
                 G_Name
             }
         }).then((list) => {
-            var listToSend = [];
+            let listToSend = [];
 
             for (let i in list){
                 let value = Object.values(list[i].dataValues);
                 listToSend.push(value[0]);
             }
 
-            res.status(200).json(listToSend);
+            res.status(200).send(listToSend);
         }).catch((err) => {
             res.send(err);
         });
@@ -96,14 +97,12 @@ const getListByName = async (req, res) => {
 
 const deleteAttribute = async (req, res) => {
     try {
-        const Id = req.params.id;
-
         await Attribute.destroy({
             where: {
-                Id
+                Id: req.params.id
             }
         }).then(() => {
-            res.status(200).json({ "msg": "Deleted successfully." });
+            res.status(200).json({ "msg": "Attribute deleted successfully." });
         }).catch((err) => {
             res.send(err);
         });

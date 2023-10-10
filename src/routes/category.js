@@ -11,7 +11,7 @@ router.route("/sub/add").post(Auth, addSubCategory);
 // Get
 router.route("/main/list").get(mainCategoryList);
 router.route("/list").get(categoryList);
-router.route("/sub/list").get(subCategoryList);
+router.route("/sub/list/:number").get(subCategoryList);
 router.route("/list/:mid").get(categoryListById);
 router.route("/sub/list/:mid/:cid").get(subCategoryListById);
 router.route("/:mid").get(categoryAndSubcategoryListById);

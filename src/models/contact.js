@@ -7,7 +7,7 @@ const Contact = sequelize.define("Contact", {
     primaryKey: true
   },
   Mobile: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT,
     allowNull: false,
   },
   Email: {

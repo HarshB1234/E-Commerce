@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const Policy = require("../models/policy");
 
 // Add Policy
@@ -15,7 +15,7 @@ const addPolicy = async (req, res) => {
             Id: uuid(),
             Policy_Statement: policy
         }).then(() => {
-            res.status(201).json({ "msg": "Added successfully." });
+            res.status(201).json({ "msg": "Policy added successfully." });
         }).catch((err) => {
             res.send(err);
         })
@@ -30,8 +30,8 @@ const getPolicyList = async (req, res) => {
     try {
         await Policy.findAll({
             attributes: ["Id", "Policy_Statement"]
-        }).then((item) => {
-            res.status(200).json(item);
+        }).then((list) => {
+            res.status(200).send(list);
         }).catch((err) => {
             res.send(err);
         });
@@ -57,7 +57,7 @@ const updatePolicy = async (req, res) => {
                 Id: id
             }
         }).then(() => {
-            res.status(201).json({ "msg": "Updated successfully." });
+            res.status(201).json({ "msg": "Policy updated successfully." });
         }).catch((err) => {
             res.send(err);
         })
@@ -77,7 +77,7 @@ const deletePolicy = async (req, res) => {
                 Id
             }
         }).then(() => {
-            res.status(200).json({ "msg": "Deleted successfully." });
+            res.status(200).json({ "msg": "Policy deleted successfully." });
         }).catch((err) => {
             res.send(err);
         });
