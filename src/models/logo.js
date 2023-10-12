@@ -1,19 +1,15 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/conn");
 
-const Category = sequelize.define('Category', {
+const Logo = sequelize.define("Logo", {
   Id: {
     type: DataTypes.UUID,
     primaryKey: true
   },
-  Name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  M_Id: {
-    type: DataTypes.UUID,
+  Logo: {
+    type: DataTypes.TEXT("long"),
     allowNull: false
   }
 });
 
-module.exports = Category
+module.exports = Logo

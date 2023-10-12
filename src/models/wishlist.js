@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/conn");
-const User = require("./register");
 
 const Wishlist = sequelize.define("Wishlist", {
   Id: {

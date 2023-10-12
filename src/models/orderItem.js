@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/conn");
-const Product = require("./product");
 
 const OrderItem = sequelize.define("OrderItem", {
   Id: {
@@ -15,7 +14,7 @@ const OrderItem = sequelize.define("OrderItem", {
     type: DataTypes.JSON,
     allowNull: false
   },
-  Price: {
+  Quantity: {
     type: DataTypes.INTEGER,
     allowNull: false
   },

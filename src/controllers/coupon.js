@@ -19,7 +19,7 @@ const addCoupon = async (req, res) => {
             },
             defaults: {
                 Id: uuid(),
-                Coupon_Code:couponCode,
+                Coupon_Code: couponCode,
                 Discription: discription,
                 Discount: discount,
                 Min_Cart_Value: minCartValue
@@ -38,10 +38,24 @@ const addCoupon = async (req, res) => {
 
 // Get coupon list
 
-const couponList = async (req, res) => { 
+const couponListAdmin = async (req, res) => {
+    try {
+        await Coupon.findAll({
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+            order: [["createdAt", "DESC"]]
+        }).then((list) => {
+            return res.status(200).send(list);
+        }).catch((err) => {
+            return res.send(err);
+        });
+    } catch (err) {
+        res.send(err);
+    }
+}
+
+const couponList = async (req, res) => {
     try {
         let amount = req.params.amount;
-        let Min_Cart_Value = amount == 0 ? {[Op.gt]: amount} : {[Op.lte]: amount};
 
         await Order.findAll({
             attributes: ["Discount_Coupon"],
@@ -49,17 +63,19 @@ const couponList = async (req, res) => {
                 U_Id: req.user.Id
             }
         }).then(async (couponList) => {
-            if(couponList.length > 0){
+            if (couponList.length > 0) {
                 let coupons = [];
 
-                for(let i of couponList){
+                for (let i of couponList) {
                     coupons.push(i.dataValues.Discount_Coupon);
                 }
 
                 await Coupon.findAll({
-                    attributes: {exclude: ["createdAt", "updatedAt"]},
+                    attributes: { exclude: ["createdAt", "updatedAt"] },
                     where: {
-                        Min_Cart_Value,
+                        Min_Cart_Value: {
+                            [Op.lte]: amount
+                        },
                         Coupon_Code: {
                             [Op.notIn]: coupons
                         }
@@ -69,11 +85,13 @@ const couponList = async (req, res) => {
                 }).catch((err) => {
                     return res.send(err);
                 });
-            }else{
+            } else {
                 await Coupon.findAll({
-                    attributes: {exclude: ["createdAt", "updatedAt"]},
+                    attributes: { exclude: ["createdAt", "updatedAt"] },
                     where: {
-                        Min_Cart_Value
+                        Min_Cart_Value: {
+                            [Op.lte]: amount
+                        }
                     }
                 }).then((list) => {
                     return res.status(200).send(list);
@@ -107,4 +125,4 @@ const deleteCoupon = async (req, res) => {
     }
 }
 
-module.exports = { addCoupon, couponList, deleteCoupon }
+module.exports = { addCoupon, couponListAdmin, couponList, deleteCoupon }

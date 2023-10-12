@@ -1,5 +1,3 @@
-const { uuid } = require("uuidv4");
-const { Op } = require("sequelize");
 const Product = require("../models/product");
 const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
@@ -15,19 +13,16 @@ const getOrderItemListAdmin = async (req, res) => {
             }
         }).then(async (details) => {
             let temp = details.dataValues;
+            let listToSend = [];
 
-            await OrderItem.findAll({
-                attributes: { exclude: ["Price", "createdAt", "updatedAt"] },
-                where: {
-                    Id: {
-                        [Op.or]: temp.OI_Id.orderItemId
+            for (let i of temp.OI_Id.orderItemId) {
+                await OrderItem.findOne({
+                    attributes: { exclude: ["createdAt", "updatedAt"] },
+                    where: {
+                        Id: i
                     }
-                }
-            }).then(async (list) => {
-                let listToSend = [];
-
-                for (let i in list) {
-                    let j = list[i].dataValues;
+                }).then(async (details) => {
+                    let j = details.dataValues;
 
                     await Product.findOne({
                         attributes: ["Name", "Image", "Brand"],
@@ -58,12 +53,12 @@ const getOrderItemListAdmin = async (req, res) => {
                     }).catch((err) => {
                         return res.send(err);
                     });
-                }
+                }).catch((err) => {
+                    return res.send(err);
+                });
+            }
 
-                res.status(200).send(listToSend);
-            }).catch((err) => {
-                return res.send(err);
-            });
+            res.status(200).send(listToSend);
         }).catch((err) => {
             res.send(err);
         });
@@ -89,7 +84,7 @@ const getOrderItemList = async (req, res) => {
 
                     for (let j of orderItemIdList) {
                         await OrderItem.findOne({
-                            attributes: { exclude: ["Price", "Cancel_Status", "createdAt", "updatedAt"] },
+                            attributes: { exclude: ["Quantity", "createdAt", "updatedAt"] },
                             where: {
                                 Id: j
                             }
@@ -113,12 +108,10 @@ const getOrderItemList = async (req, res) => {
                                     listToSend.push(temp);
                                 }
                             }).catch((err) => {
-                                res.send(err);
-                            })
-
-                            listToSend.push(j);
+                                return res.send(err);
+                            });
                         }).catch((err) => {
-                            res.send(err);
+                            return res.send(err);
                         });
                     }
                 }
@@ -161,8 +154,8 @@ const updateOrderItemQuantity = async (req, res) => {
                 let sizeQuantityToUpdate = sizeQuantityDetail.dataValues.Size_Quantity;
 
                 for (let i in sizeQuantityToUpdate) {
-                    if (i == Object.keys(temp.Size_Quantity)) {
-                        diff = temp.Size_Quantity[i] - quantity;
+                    if (i == Object.keys(temp.Size_Quantity)[0]) {
+                        diff = temp.Quantity - quantity;
                         sizeQuantityToUpdate[i] = sizeQuantityToUpdate[i] + diff;
                     }
                 }
@@ -177,52 +170,49 @@ const updateOrderItemQuantity = async (req, res) => {
                     let sizeQuantityToUpdate = {};
                     let size = Object.keys(temp.Size_Quantity)[0];
                     sizeQuantityToUpdate[size] = quantity;
+                    let price = Math.floor((temp.T_Price / temp.Quantity) * diff);
 
                     await OrderItem.update({
                         Size_Quantity: sizeQuantityToUpdate,
-                        T_Price: temp.T_Price - (temp.Price * diff)
+                        Quantity: quantity,
+                        T_Price: temp.T_Price - price
                     }, {
                         where: {
                             Id: id
                         }
                     }).then(async () => {
                         await Order.findOne({
-                            attributes: ["Price", "T_Price", "Payment_Status", "Due_Refund_Amount", "Total_Refund_Amount"]
-                        }, {
+                            attributes: ["T_Price", "Payment_Status", "Due_Refund_Amount", "Total_Refund_Amount"],
                             where: {
                                 Id: oId
                             }
                         }).then(async (details) => {
                             let temp2 = details.dataValues;
+                            let update;
 
-                            if (temp2.Payment_Status != "Pending") {
-                                await Order.update({
-                                    Due_Refund_Amount: temp2.Due_Refund_Amount + (temp.Price * diff),
-                                    Total_Refund_Amount: temp2.T_Price + (temp.Price * diff),
+                            if (temp2.Payment_Status == "Paid") {
+                                update = {
+                                    Due_Refund_Amount: temp2.Due_Refund_Amount + price,
+                                    Total_Refund_Amount: temp2.Total_Refund_Amount + price,
                                     Refund_Status: "Unpaid"
-                                }, {
-                                    where: {
-                                        Id: oId
-                                    }
-                                }).then(() => {
-                                    return res.status(200).json({ "msg": "Order item updated successfully." });
-                                }).catch((err) => {
-                                    return res.send(err);
-                                });
-                            }else{
-                                await Order.update({
-                                    Price: temp2.Price - (temp.Price * diff),
-                                    T_Price: temp2.T_Price - (temp.Price * diff)
-                                }, {
-                                    where: {
-                                        Id: oId
-                                    }
-                                }).then(() => {
-                                    return res.status(200).json({ "msg": "Order item updated successfully." });
-                                }).catch((err) => {
-                                    return res.send(err);
-                                });
+                                }
                             }
+
+                            if (temp2.Payment_Status == "Pending") {
+                                update = {
+                                    T_Price: temp2.T_Price - price
+                                }
+                            }
+
+                            await Order.update(update, {
+                                where: {
+                                    Id: oId
+                                }
+                            }).then(() => {
+                                return res.status(200).json({ "msg": "Order item updated successfully." });
+                            }).catch((err) => {
+                                return res.send(err);
+                            });
                         }).catch((err) => {
                             return res.send(err);
                         });
@@ -266,8 +256,8 @@ const deleteOrderItem = async (req, res) => {
                 let sizeQuantityToUpdate = sizeQuantityDetail.dataValues.Size_Quantity;
 
                 for (let i in sizeQuantityToUpdate) {
-                    if (i == Object.keys(temp.Size_Quantity)) {
-                        sizeQuantityToUpdate[i] = sizeQuantityToUpdate[i] + temp.Size_Quantity[i];
+                    if (i == Object.keys(temp.Size_Quantity)[0]) {
+                        sizeQuantityToUpdate[i] = sizeQuantityToUpdate[i] + temp.Quantity;
                     }
                 }
 
@@ -275,7 +265,7 @@ const deleteOrderItem = async (req, res) => {
                     Size_Quantity: sizeQuantityToUpdate
                 }, {
                     where: {
-                        Id: details.dataValues.P_Id
+                        Id: temp.P_Id
                     }
                 }).then(async () => {
                     await OrderItem.destroy({
@@ -284,8 +274,7 @@ const deleteOrderItem = async (req, res) => {
                         }
                     }).then(async () => {
                         await Order.findOne({
-                            attributes: ["OI_Id", "Price", "T_Price", "Payment_Status", "Due_Refund_Amount", "Total_Refund_Amount"]
-                        }, {
+                            attributes: ["OI_Id", "T_Price", "Payment_Status", "Due_Refund_Amount", "Total_Refund_Amount"],
                             where: {
                                 Id: oId
                             }
@@ -296,36 +285,52 @@ const deleteOrderItem = async (req, res) => {
                             orderItemIdList.splice(index, 1);
                             let orderItemIdListToUpdate = { "orderItemId": orderItemIdList };
 
-                            if (temp2.Payment_Status != "Pending") {
-                                await Order.update({
-                                    OI_Id: orderItemIdListToUpdate,
-                                    Due_Refund_Amount: temp2.Due_Refund_Amount + temp.T_Price,
-                                    Total_Refund_Amount: temp2.T_Price + temp.T_Price,
-                                    Refund_Status: "Pending"
-                                }, {
-                                    where: {
-                                        Id: oId
+                            let update;
+
+                            if (temp2.Payment_Status == "Paid") {
+                                if(orderItemIdList.length == 0){
+                                    update = {
+                                        OI_Id: orderItemIdListToUpdate,
+                                        Due_Refund_Amount: temp2.Due_Refund_Amount + temp.T_Price,
+                                        Total_Refund_Amount: temp2.Total_Refund_Amount + temp.T_Price,
+                                        Refund_Status: "Unpaid",
+                                        Order_Status: "Canceled"
                                     }
-                                }).then(() => {
-                                    return res.status(200).json({ "msg": "Order item deleted successfully." });
-                                }).catch((err) => {
-                                    return res.send(err);
-                                });
-                            }else{
-                                await Order.update({
-                                    OI_Id: orderItemIdListToUpdate,
-                                    Price: temp2.Price - temp.T_Price,
-                                    T_Price: temp2.T_Price - temp.T_Price
-                                }, {
-                                    where: {
-                                        Id: oId
+                                }else{
+                                    update = {
+                                        OI_Id: orderItemIdListToUpdate,
+                                        Due_Refund_Amount: temp2.Due_Refund_Amount + temp.T_Price,
+                                        Total_Refund_Amount: temp2.Total_Refund_Amount + temp.T_Price,
+                                        Refund_Status: "Unpaid"
                                     }
-                                }).then(() => {
-                                    return res.status(200).json({ "msg": "Order item deleted successfully." });
-                                }).catch((err) => {
-                                    return res.send(err);
-                                });
+                                }
                             }
+
+                            if (temp2.Payment_Status == "Pending") {
+                                if(temp2.T_Price - temp.T_Price == 0){
+                                    update = {
+                                        OI_Id: orderItemIdListToUpdate,
+                                        T_Price: temp2.T_Price - temp.T_Price,
+                                        Order_Status: "Canceled",
+                                        Payment_Status: "None"
+                                    }
+                                }else{
+                                    update = {
+                                        OI_Id: orderItemIdListToUpdate,
+                                        T_Price: temp2.T_Price - temp.T_Price
+                                    }
+                                }
+                            }
+
+                            await Order.update(update, {
+                                where: {
+                                    Id: oId
+                                }
+                            }).then(() => {
+                                return res.status(200).json({ "msg": "Order item deleted successfully." });
+                            }).catch((err) => {
+                                return res.send(err);
+                            });
                         }).catch((err) => {
                             return res.send(err);
                         });
@@ -341,7 +346,7 @@ const deleteOrderItem = async (req, res) => {
         }).catch((err) => {
             res.send(err);
         });
-    } catch (err) {
+    } catch {
         res.send(err);
     }
 }

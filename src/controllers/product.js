@@ -571,12 +571,11 @@ const saleProduct = async (req, res) => {
 
 // Update Product
 
-const updateProduct = async (req, res) => {
+const updateProduct = async (req, res) => { 
     try {
-        let { id, name, brand, description, sizeQuantity, price, sPrice, attributes } = req.body;
-        let image = req.files.image;
+        let { id, name, description, sizeQuantity, price, sPrice } = req.body;
 
-        if (!(id && name && brand && description && sizeQuantity && attributes && price && sPrice)) {
+        if (!(id && name && description && sizeQuantity && price && sPrice)) {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
@@ -589,45 +588,12 @@ const updateProduct = async (req, res) => {
             sizeQuantityToAdd[k[0]] = v[0];
         }
 
-        var imagePath = [];
-
-        for (let i of image) {
-            let str = i.mimetype;
-            let lastIndex = str.lastIndexOf("/");
-            let type = str.substring(lastIndex + 1);
-            await uploadToS3(i.data, type).then((result) => {
-                imagePath.push(result.Location);
-            });
-        }
-
-        await Product.findOne({
-            attributes: ["Image"],
-            where: {
-                Id: id
-            }
-        }).then(async (item) => {
-            let image = item.dataValues.Image.images;
-
-            for (let i of image) {
-                let lastIndex = i.lastIndexOf("/");
-                let name = i.substring(lastIndex + 1);
-                await deleteToS3(name).then((result) => {
-                    console.log(result);
-                });
-            }
-        }).catch((err) => {
-            res.send(err);
-        });
-
         await Product.update({
             Name: name,
-            Image: { "images": imagePath },
-            Brand: brand,
             Description: description,
             Size_Quantity: sizeQuantityToAdd,
             Price: price,
-            S_Price: sPrice,
-            Attributes: JSON.parse(req.body.attributes)
+            S_Price: sPrice
         }, {
             where: {
                 Id: id
@@ -681,4 +647,4 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { addProduct, productList, filterProductListAdmin, productListById, filterProductList, productById, activeProduct, saleProduct, updateProduct, deleteProduct }
+module.exports = { addProduct, productList, filterProductListAdmin, productListById, filterProductList, productById, activeProduct, saleProduct, updateProduct, deleteProduct } 

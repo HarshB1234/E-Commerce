@@ -1,7 +1,5 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/conn");
-const Address = require("./address");
-const User = require("./register");
 
 const Order = sequelize.define("Order", {
   Id: {
@@ -25,16 +23,8 @@ const Order = sequelize.define("Order", {
     type: DataTypes.JSON,
     allowNull: false
   },
-  Price: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
   Discount_Coupon: {
     type: DataTypes.STRING,
-    allowNull: false
-  },
-  Discount: {
-    type: DataTypes.INTEGER,
     allowNull: false
   },
   T_Price: {

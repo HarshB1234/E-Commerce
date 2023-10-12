@@ -1,5 +1,4 @@
 // ENV
-const path = require("path");
 require("dotenv").config({ path: __dirname + "/.env" });
 
 // Database
@@ -8,6 +7,7 @@ const mysql = require("mysql2");
 
 // Models
 sequelize.sync();
+const Logo = require("./models/logo");
 const User = require("./models/register");
 const MainCategory = require("./models/mainCategory");
 const Category = require("./models/category");
@@ -33,6 +33,7 @@ const fileUpload = require("express-fileupload");
 const port = process.env.PORT || 8000;
 
 // Routes
+const logo_router = require("./routes/logo");
 const register_router = require("./routes/register");
 const login_router = require("./routes/login");
 const category_router = require("./routes/category");
@@ -63,6 +64,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: false }));
 app.use(fileUpload());
 
 // Controllers
+app.use("/logo", logo_router);
 app.use("/register", register_router);
 app.use("/login", login_router);
 app.use("/category", category_router);

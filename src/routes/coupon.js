@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const Auth = require("../middleware/auth");
-const { addCoupon, couponList, deleteCoupon } = require("../controllers/coupon");
+const { addCoupon, couponListAdmin, couponList, deleteCoupon } = require("../controllers/coupon");
 
 // Add 
 router.route("/add").post(Auth, addCoupon);
 
 // Get
+router.route("/list").get(Auth, couponListAdmin);
 router.route("/list/:amount").get(Auth, couponList);
 
 // Delete

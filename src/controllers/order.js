@@ -7,6 +7,7 @@ const Coupon = require("../models/coupon");
 const User = require("../models/register");
 const Address = require("../models/address");
 const Cart = require("../models/cart");
+const { Op } = require("sequelize");
 
 // Razorpay Instance
 
@@ -18,7 +19,8 @@ const addOrder = async (req, res) => {
     try {
         let { items, aId, cId, pMode } = req.body;
         let orderItemId = [];
-        let priceArr = [];
+        let totalPrice = 0;
+        let quantity = 0;
         let discountCoupon = "None";
         let discount = 0;
         let minCartValue = 0;
@@ -38,11 +40,12 @@ const addOrder = async (req, res) => {
                     Id: uuid(),
                     P_Id: i.pId,
                     Size_Quantity: i.sizeQuantity,
-                    Price: price.dataValues.Price,
+                    Quantity: Object.values(i.sizeQuantity)[0],
                     T_Price: Object.values(i.sizeQuantity)[0] * price.dataValues.Price
                 }).then((details) => {
                     orderItemId.push(details.dataValues.Id);
-                    priceArr.push(details.dataValues.T_Price);
+                    totalPrice += details.dataValues.T_Price;
+                    quantity += details.dataValues.Quantity;
                 }).catch((err) => {
                     return res.send(err);
                 });
@@ -90,24 +93,49 @@ const addOrder = async (req, res) => {
             });
         }
 
-        let price = priceArr.reduce((a, b) => a + b);
-
-        if (price >= minCartValue) {
+        if (totalPrice >= minCartValue) {
             await Order.create({
                 Id: uuid(),
                 U_Id: req.user.Id,
                 A_Id: aId,
                 OI_Id: { orderItemId },
-                Price: price,
                 Discount_Coupon: discountCoupon,
-                Discount: discount,
-                T_Price: price - discount
-            }).then((details) => {
+                T_Price: totalPrice - discount
+            }).then(async (details) => {
+                await OrderItem.findAll({
+                    attributes: ["Id", "Quantity", "T_Price"],
+                    where: {
+                        Id: {
+                            [Op.or]: orderItemId
+                        }
+                    }
+                }).then(async (list) => {
+                    let dicountPerQuantity = discount / quantity;
+
+                    for (let i of list) {
+                        let j = i.dataValues;
+
+                        let totalPriceToUpdate = j.T_Price - (j.Quantity * dicountPerQuantity);
+
+                        await OrderItem.update({
+                            T_Price: totalPriceToUpdate
+                        }, {
+                            where: {
+                                Id: j.Id
+                            }
+                        }).catch((err) => {
+                            return res.send(err);
+                        });
+                    }
+                }).catch((err) => {
+                    return res.send(err);
+                });
+
                 if (pMode == "COD") {
                     res.status(201).json({ "msg": "Order placed." });
                 } else {
                     const options = {
-                        amount: price - discount,
+                        amount: (totalPrice - discount) * 100,
                         currency: "INR",
                         receipt: details.dataValues.Id
                     };
@@ -116,7 +144,7 @@ const addOrder = async (req, res) => {
                         if (err) {
                             return res.send(err);
                         } else {
-                            return res.status(200).json(order);
+                            return res.status(200).json({"oId": details.dataValues.Id, order});
                         }
                     });
                 }
@@ -173,12 +201,8 @@ const getOrderListAdmin = async (req, res) => {
                     j.Payment_Status = "None";
                 }
 
-                if (j.Order_Status == "Delivered") {
-                    j.Payment_Status = "Paid";
-                }
-
                 j.Cancel_Status = true;
-                if (j.Order_Status == "Pending") {
+                if (j.Order_Status != "Pending") {
                     j.Cancel_Status = false;
                 }
 
@@ -194,6 +218,25 @@ const getOrderListAdmin = async (req, res) => {
     }
 }
 
+// Filter Order
+
+const filterOrderByNumber = async (req, res) => {
+    try {
+        await Order.findOne({
+            attributes: { exclude: ["OI_Id", "createdAt", "updatedAt"] },
+            where:{
+                O_Number: req.params.number
+            }
+        }).then((details) => {
+            res.status(200).send(details);
+        }).catch((err) => {
+            res.send(err);
+        })
+    } catch (err) {
+       res.send(err); 
+    }
+}
+
 // Update Order Status
 
 const updateOrderStatus = async (req, res) => {
@@ -205,17 +248,32 @@ const updateOrderStatus = async (req, res) => {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
-        await Order.update({
-            Order_Status: status
-        }, {
-            where: {
-                Id: id
-            }
-        }).then(() => {
-            res.status(200).json({ "msg": "Order status updated successfully." });
-        }).catch((err) => {
-            res.send(err);
-        });
+        if (status != "Delivered") {
+            await Order.update({
+                Order_Status: status
+            }, {
+                where: {
+                    Id: id
+                }
+            }).then(() => {
+                return res.status(200).json({ "msg": "Order status updated successfully." });
+            }).catch((err) => {
+                return res.send(err);
+            });
+        } else {
+            await Order.update({
+                Order_Status: status,
+                Payment_Status: "Paid"
+            }, {
+                where: {
+                    Id: id
+                }
+            }).then(() => {
+                return res.status(200).json({ "msg": "Order status updated successfully." });
+            }).catch((err) => {
+                return res.send(err);
+            });
+        }
     } catch (err) {
         res.send(err);
     }
@@ -226,6 +284,7 @@ const updateOrderStatus = async (req, res) => {
 const updateRefundStatus = async (req, res) => {
     try {
         let { id } = req.body;
+
 
         if (!id) {
             return res.status(400).json({ "msg": "Some field is empty." });
@@ -302,9 +361,6 @@ const deleteOrder = async (req, res) => {
 
             if (details.dataValues.Payment_Status == "Pending") {
                 updatedData = {
-                    Price: 0,
-                    Discount: 0,
-                    T_Price: 0,
                     Order_Status: "Canceled",
                     Payment_Status: "None"
                 };
@@ -334,4 +390,4 @@ const deleteOrder = async (req, res) => {
     }
 }
 
-module.exports = { addOrder, getOrderListAdmin, updateOrderStatus, updateRefundStatus, deleteOrder }
+module.exports = { addOrder, getOrderListAdmin, filterOrderByNumber, updateOrderStatus, updateRefundStatus, deleteOrder }
