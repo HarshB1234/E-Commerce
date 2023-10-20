@@ -49,6 +49,7 @@ const address_router = require("./routes/address");
 const order_router = require("./routes/order");
 const order_item_router = require("./routes/orderItem");
 const payment_router = require("./routes/payment");
+const statistics_router = require("./routes/statistics");
 
 // Express App
 const app = express();
@@ -80,6 +81,7 @@ app.use("/address", address_router);
 app.use("/order", order_router);
 app.use("/orderitem", order_item_router);
 app.use("/payment", payment_router);
+app.use("/statistics", statistics_router);
 
 // Listening
 app.listen(port, () => {

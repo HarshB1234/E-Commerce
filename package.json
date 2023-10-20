@@ -21,6 +21,7 @@
     "express-fileupload": "^1.4.0",
     "jsonwebtoken": "^9.0.0",
     "mysql2": "^3.3.5",
+    "nodemailer": "^6.9.6",
     "razorpay": "^2.9.2",
     "sequelize": "^6.32.0",
     "uuidv4": "^6.2.13"

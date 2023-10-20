@@ -579,19 +579,10 @@ const updateProduct = async (req, res) => {
             return res.status(400).json({ "msg": "Some field is empty." });
         }
 
-        sizeQuantity = JSON.parse(req.body.sizeQuantity);
-        let sizeQuantityToAdd = {};
-
-        for (let i of sizeQuantity) {
-            let k = Object.keys(i);
-            let v = Object.values(i);
-            sizeQuantityToAdd[k[0]] = v[0];
-        }
-
         await Product.update({
             Name: name,
             Description: description,
-            Size_Quantity: sizeQuantityToAdd,
+            Size_Quantity: sizeQuantity,
             Price: price,
             S_Price: sPrice
         }, {

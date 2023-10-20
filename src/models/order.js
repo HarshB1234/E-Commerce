@@ -15,8 +15,8 @@ const Order = sequelize.define("Order", {
     type: DataTypes.UUID,
     allowNull: false
   },
-  A_Id: {
-    type: DataTypes.UUID,
+  Shipping_Details: {
+    type: DataTypes.JSON,
     allowNull: false
   },
   OI_Id: {
@@ -25,7 +25,7 @@ const Order = sequelize.define("Order", {
   },
   Discount_Coupon: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: "None"
   },
   T_Price: {
     type: DataTypes.INTEGER,
@@ -50,6 +50,10 @@ const Order = sequelize.define("Order", {
   Refund_Status: {
     type: DataTypes.STRING,
     defaultValue: "None"
+  },
+  Delivery_Date: {
+    type: DataTypes.DATEONLY,
+    defaultValue: DataTypes.NOW
   }
 },{
   initialAutoIncrement: 1000

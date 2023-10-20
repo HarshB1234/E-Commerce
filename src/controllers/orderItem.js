@@ -7,7 +7,7 @@ const OrderItem = require("../models/orderItem");
 const getOrderItemListAdmin = async (req, res) => {
     try {
         await Order.findOne({
-            attributes: ["OI_Id", "Order_Status"],
+            attributes: ["OI_Id", "Order_Status", "Delivery_Date"],
             where: {
                 Id: req.params.id
             }
@@ -72,7 +72,7 @@ const getOrderItemList = async (req, res) => {
         let listToSend = [];
 
         await Order.findAll({
-            attributes: ["OI_Id", "Order_Status"],
+            attributes: ["O_Number", "OI_Id", "Order_Status", "Delivery_Date"],
             where: {
                 U_Id: req.user.Id
             },
@@ -80,7 +80,8 @@ const getOrderItemList = async (req, res) => {
         }).then(async (list) => {
             if (list.length > 0) {
                 for (let i of list) {
-                    let orderItemIdList = i.dataValues.OI_Id.orderItemId;
+                    let temp = i.dataValues;
+                    let orderItemIdList = temp.OI_Id.orderItemId;
 
                     for (let j of orderItemIdList) {
                         await OrderItem.findOne({
@@ -89,23 +90,29 @@ const getOrderItemList = async (req, res) => {
                                 Id: j
                             }
                         }).then(async (details) => {
-                            let temp = details.dataValues;
+                            let temp2 = details.dataValues;
 
                             await Product.findOne({
                                 attributes: ["Name", "Image", "Brand"],
                                 where: {
-                                    Id: details.dataValues.P_Id
+                                    Id: temp2.P_Id
                                 }
                             }).then((details) => {
                                 if (details) {
                                     let productDetails = details.dataValues;
 
-                                    temp.Name = productDetails.Name;
-                                    temp.Image = productDetails.Image;
-                                    temp.Brand = productDetails.Brand;
-                                    temp.Status = i.dataValues.Order_Status;
+                                    temp2.Name = productDetails.Name;
+                                    temp2.Image = productDetails.Image;
+                                    temp2.Brand = productDetails.Brand;
+                                    temp2.OrderNumber = temp.O_Number;
+                                    temp2.Status = temp.Order_Status;
+                                    temp2.Delivery_Date = temp.Delivery_Date;
 
-                                    listToSend.push(temp);
+                                    if(temp.Order_Status != "Delivered"){
+                                        temp2.Delivery_Date = "None"
+                                    }
+
+                                    listToSend.push(temp2);
                                 }
                             }).catch((err) => {
                                 return res.send(err);
