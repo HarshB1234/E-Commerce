@@ -15,11 +15,11 @@ const Coupon = sequelize.define("Coupon", {
     allowNull: false
   },
   Discount: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   Min_Cart_Value: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   }
 });

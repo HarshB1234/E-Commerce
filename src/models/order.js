@@ -25,10 +25,10 @@ const Order = sequelize.define("Order", {
   },
   Discount_Coupon: {
     type: DataTypes.STRING,
-    allowNull: "None"
+    defaultValue: "None" 
   },
   T_Price: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   Payment_Status: {
@@ -40,11 +40,11 @@ const Order = sequelize.define("Order", {
     defaultValue: "Pending"
   },
   Due_Refund_Amount: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     defaultValue: 0
   },
   Total_Refund_Amount: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     defaultValue: 0
   },
   Refund_Status: {

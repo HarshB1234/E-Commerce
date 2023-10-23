@@ -19,7 +19,7 @@ const OrderItem = sequelize.define("OrderItem", {
     allowNull: false
   },
   T_Price: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   }
 });
